@@ -25,7 +25,7 @@ class LoginController extends Controller
      *
      * @return Response
      */
-    public function handleProviderCallback(Response $response)
+    public function handleProviderCallback()
     {
         $googleUser = Socialite::driver('google')->user();
 		$user = User::where('email', $googleUser->email)->first();
@@ -39,6 +39,11 @@ class LoginController extends Controller
 			$user->save();
 		}
         Auth::login($user);
+		return redirect()->intended('home');
+	}
+
+	public function logout() {
+		Auth::logout();
 		return redirect()->intended('home');
 	}
 }

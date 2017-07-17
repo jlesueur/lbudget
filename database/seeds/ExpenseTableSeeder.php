@@ -11,7 +11,7 @@ class ExpenseTableSeeder extends Seeder
      */
     public function run()
     {
-		$userId = factory(LBudget\User::class)->create(['email' => 'john.lesueur@gmail.com'])->id;
+		$userId = factory(LBudget\User::class)->create(['email' => env('APP_OWNER')])->id;
 		$accountId = factory(LBudget\Account::class)->create(['user_id' => $userId])->id;
 		for ($iteration = 0; $iteration < 10; $iteration++) {
 			if ($iteration == 0) {

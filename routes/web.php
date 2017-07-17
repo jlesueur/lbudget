@@ -17,6 +17,7 @@ Route::get('/', function () {
 
 Route::get('/login', ['uses' => 'LoginController@redirectToProvider', 'as' => 'login']);
 Route::get('/google/oauth2callback', ['uses' => 'LoginController@handleProviderCallback']);
+Route::get('/logout', ['uses' => 'LoginController@logout', 'as' => 'logout']);
 
 Route::group(['middleware' => 'auth'], function() {
 	Route::get('/register', ['uses' => 'RegistrationController@startRegistration', 'as' => 'register']);
