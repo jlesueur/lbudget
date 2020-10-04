@@ -16,9 +16,16 @@ require('bootstrap-sass');
  * using reactive data binding and reusable components. Vue's API is clean
  * and simple, leaving you to focus on building your next great project.
  */
-
 window.Vue = require('vue');
 Vue.use(require('vue-resource'));
+
+
+import locale from 'element-ui/lib/locale/lang/en';
+import 'element-ui/lib/theme-chalk/index.css';
+import ElementUI from 'element-ui';
+Vue.use(ElementUI, {locale});
+
+
 
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests

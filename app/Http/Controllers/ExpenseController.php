@@ -46,7 +46,12 @@ class ExpenseController extends Controller
 
 	public function postExpense($expenseId, Request $request) {
 		$expense = Expense::find($expenseId);
-		$expense->category_id = $request->input('category_id');
+		$settableFields = ['category_id', 'amount', 'credit', 'ymdt', 'span_months', 'description', 'comment'];
+		foreach ($settableFields as $fieldName) {
+			if ($request->has($fieldName)) {
+				$expense->$fieldName = $request->input($fieldName);
+			}
+		}
 		$expense->save();
 		return [
 			'success' => true,
