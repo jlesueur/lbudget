@@ -82,7 +82,7 @@ $factory->define(LBudget\Expense::class, function (Faker\Generator $faker) {
 		},
 		'ymdt' => $faker->dateTimeThisYear,
 		'import_hash' => $faker->md5,
-		'span_months' => $faker->boolean() ? 1 : $faker->randomDigit + 1,
+		'span_months' => $faker->boolean() && $faker->boolean() && $faker->boolean() ? $faker->randomDigit + 1 : 1,
 		'credit' => $faker->boolean() && $faker->boolean() && $faker->boolean(),
 	];
 });
