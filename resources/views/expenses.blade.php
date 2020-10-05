@@ -9,18 +9,6 @@
 	.table tr td {
 		mix-blend-mode: multiply;
 	}
-
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    /* display: none; <- Crashes Chrome on hover */
-    -webkit-appearance: none;
-    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
-}
-
-input[type=number] {
-    -moz-appearance:textfield; /* Firefox */
-	text-align:right;
-}
 </style>
 <script type="text/x-template" id="budget-row">
 <tr :style="{backgroundColor: budget.color ? budget.color : 'white'}">
