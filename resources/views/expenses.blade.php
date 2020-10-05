@@ -22,35 +22,6 @@ input[type=number] {
 	text-align:right;
 }
 </style>
-<script type="text/x-template" id="expense-row">
-	<tr :style="{backgroundColor: expense.category_id ? categories[expense.category_id].color : 'white'}">
-	<td>
-		<a :href="'#expense/' + expense.id" tabindex="-1" @click="$emit('edit-expense', expense)">edit</a>
-	</td>
-	<td v-bind:id="'expenseCatCell' + expense.id">
-		<select :value="expense.category_id" tabindex="1" @change="updateCategory(expense, $event)">
-			<option value=""></option>
-			<option v-for="category in categories" :value="category.id">{{category.name}}</option>
-		</select>
-		<span style="display: none">{{expense.category_id ? categories[expense.category_id].name : 'Non-budget transaction'}}</span>
-	</td>
-	<td>
-		<span v-if="expense.credit"><b><em>${{(expense.amount / expense.span_months) | round(2)}}</em></b></span>
-		<span v-else>(${{(expense.amount / expense.span_months) | round(2)}})</span>
-		<div v-if="expense.span_months >1"><small>over {{expense.span_months}} months</small></div>
-	</td>
-	<td>
-		{{expense.description}}
-	</td>
-	<td>
-		{{accounts[expense.account_id].name}}
-	</td>
-	<td>{{expense.ymdt}}</td>
-	<td>
-		<a href="#" v-on:click="deleteExpense" class="delete" tabindex="-1">X</a>
-	</td>
-</tr>
-</script>
 <script type="text/x-template" id="budget-row">
 <tr :style="{backgroundColor: budget.color ? budget.color : 'white'}">
 	<td>
@@ -115,7 +86,7 @@ input[type=number] {
 				Delete
 			</th>
 		</tr>
-		<tr is="expense-row" v-for="expense in expenses" :expense="expense" :categories="categories" :accounts="expenseAccounts" v-on:recategorized="refetchBudget" v-on:deleted="deleteExpense" :key="expense.id" v-on:edit-expense="editExpense"></tr>
+		<tr is="expense-row" v-for="expense in expenses" :expense="expense" :categories="categories" :deleted-categories="deletedCategories" :accounts="expenseAccounts" v-on:recategorized="refetchBudget" v-on:deleted="deleteExpense" :key="expense.id" v-on:edit-expense="editExpense"></tr>
 	</table>
 	<table id="budget" class="table">
 		<tr>
@@ -155,30 +126,6 @@ input[type=number] {
 		el: '#app',
 		components: {
 			VPaginator: VuePaginator,
-			ExpenseRow: {
-				template: '#expense-row',
-				props: ['expense', 'categories', 'accounts'],
-				methods: {
-					'deleteExpense': function() {
-						var component = this;
-						axios.delete('/expense/' + this.expense.id).then(function() {
-							component.$emit('deleted', component.expense.id);
-						});
-					},
-					updateCategory: function(expense, event) {
-						var component = this;
-						axios.post("/expense/" + expense.id, {
-							'category_id': event.target.value
-						}).then(function() {
-							expense.category_id = event.target.value;
-							component.$emit('recategorized');
-						}).catch(function(error) {
-							event.target.value = expense.category_id;
-							console.log("error updating the category", error);
-						});
-					}
-				}
-			},
 			BudgetRow: {
 				template: '#budget-row',
 				props: ['budget'],
@@ -231,6 +178,7 @@ input[type=number] {
 			expenses: {},
 			expenseAccounts: {},
 			categories: {!! $categories !!},
+			deletedCategories: {!! $deletedCategories !!},
 			options: {},
 			month: {{$month}},
 			year: {{$year}},

@@ -28,6 +28,19 @@ class Category extends Model
 				->keyBy('id');
 	}
 
+	public static function deletedList($userId) {
+		$selectListExcludedFields = ["amount", 'user_id', 'created_at', 'updated_at', 'deleted_at'];
+		return Category::where('id', 0)
+				->orWhere(function($query) use ($userId) {
+					$query->where('user_id', $userId)
+						->whereNotNull('deleted_at');
+				})
+				->orderBy(DB::raw("(select count(expense.id) from expense where category_id = category.id and ymdt + interval '1 month' > now())"))
+				->get()
+				->makeHidden($selectListExcludedFields)
+				->keyBy('id');
+	}
+
 	public static function getBalances($userId, $month, $year) {
 		$paddedMonth = str_pad($month, 2, '0', STR_PAD_LEFT);
 		$nextMonth = $month+1;

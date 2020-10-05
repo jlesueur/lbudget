@@ -15,6 +15,7 @@ require('./bootstrap');
 
 Vue.component('example', require('./components/Example.vue'));
 Vue.component('ExpenseDialog', require('./components/ExpenseDialog.vue'));
+Vue.component('ExpenseRow', require('./components/ExpenseRow.vue'));
 
 /*const app = new Vue({
     el: '#app'

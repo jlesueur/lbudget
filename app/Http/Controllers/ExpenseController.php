@@ -18,11 +18,13 @@ class ExpenseController extends Controller
 		$year = $request->get('year') ?: $now->format('Y');
 		//$expenseCount = Expense::countExpensesForYearAndMonth($request->user()->id, $month, $year);
 		$categories = Category::selectList($request->user()->id);
+		$deletedCategories = Category::deletedList($request->user()->id);
 		return view('expenses', [
 			'pageSize' => $this->pageSize,
 			'month' => $month,
 			'year' => $year,
 			'categories' => $categories->toJson(),
+			'deletedCategories' => $deletedCategories->toJson(),
 			'budget' => Category::getBalances($request->user()->id, $month, $year),
 		]);
 	}
