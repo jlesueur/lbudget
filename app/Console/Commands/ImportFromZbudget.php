@@ -62,7 +62,7 @@ class ImportFromZbudget extends Command
 			$user->init_done = true;
 			$user->save();
 		}
-		$databaseManager->getConnection('zbudget')->query("select setval('users_id_seq', (select max(id) + 1 from users))");
+		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'id'), MAX(id)) FROM users");
 		$accounts = $databaseManager->getConnection('zbudget')->table('account')->get();
 		foreach ($accounts as $zAccount) {
 			$account = new \LBudget\Account();
@@ -73,7 +73,7 @@ class ImportFromZbudget extends Command
 			$account->deleted_at = $zAccount->deleted ? '2010-01-01 00:00:00' : null;
 			$account->save();
 		}
-		$databaseManager->getConnection('zbudget')->query("select setval('account_id_seq', (select max(id) + 1 from account))");
+		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('account', 'id'), MAX(id)) FROM account");
 		$categories = $databaseManager->getConnection('zbudget')->table('category')->get();
 		foreach ($categories as $zCategory) {
 			$category = new \LBudget\Category();
@@ -95,7 +95,7 @@ class ImportFromZbudget extends Command
 			}
 			$category->save();
 		}
-		$databaseManager->getConnection('zbudget')->query("select setval('category_id_seq', (select max(id) + 1 from category))");
+		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('category', 'id'), MAX(id)) FROM category");
 		$expenses = $databaseManager->getConnection('zbudget')->table('expense')->get();
 		foreach($expenses as $zExpense) {
 			$expense = new \LBudget\Expense();
@@ -111,7 +111,7 @@ class ImportFromZbudget extends Command
 			$expense->credit = (bool)$zExpense->credit;
 			$expense->save();
 		}
-		$databaseManager->getConnection('zbudget')->query("select setval('expense_id_seq', (select max(id) + 1 from expense))");
+		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('expense', 'id'), MAX(id)) FROM expense");
 
 		$categoryPeriods = $databaseManager->getConnection('zbudget')->table('category_period')->get();
 		foreach($categoryPeriods as $zCategoryPeriod) {
@@ -125,6 +125,6 @@ class ImportFromZbudget extends Command
 			$categoryPeriod->deleted_at = $zCategoryPeriod->deleted ? '2010-01-01 00:00:00' : null;
 			$categoryPeriod->save();
 		}
-		$databaseManager->getConnection('zbudget')->query("select setval('category_period_id_seq', (select max(id) + 1 from category_period))");
+		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('category_period', 'id'), MAX(id)) FROM category_period");
     }
 }
