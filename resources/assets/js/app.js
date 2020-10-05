@@ -13,9 +13,10 @@ require('./bootstrap');
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 
-Vue.component('example', require('./components/Example.vue'));
-Vue.component('ExpenseDialog', require('./components/ExpenseDialog.vue'));
-Vue.component('ExpenseRow', require('./components/ExpenseRow.vue'));
+
+
+Vue.component('ExpenseDialog', require('./components/ExpenseDialog.vue').default);
+Vue.component('ExpenseRow', require('./components/ExpenseRow.vue').default);
 
 /*const app = new Vue({
     el: '#app'
