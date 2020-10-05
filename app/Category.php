@@ -84,7 +84,9 @@ class Category extends Model
 			$category->historicalTotal = $categoryTotals->get($category->id);
 			$category->monthTotal = $monthTotals->get($category->id);
 		}
-		return $categories;
+		return $categories->sortBy(function ($category, $key){
+			return $category->monthTotal ? $category->monthTotal->spent ?? $category->monthTotal->used : 0;
+		});
 	}
 
 	private static function populateCategoryPeriods($categories, $month, $year, $prevMonth, $prevYear) {

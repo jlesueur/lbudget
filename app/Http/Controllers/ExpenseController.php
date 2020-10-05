@@ -25,7 +25,7 @@ class ExpenseController extends Controller
 			'year' => $year,
 			'categories' => $categories->toJson(),
 			'deletedCategories' => $deletedCategories->toJson(),
-			'budget' => Category::getBalances($request->user()->id, $month, $year),
+			'budget' => json_encode(array_values(Category::getBalances($request->user()->id, $month, $year)->toArray())),
 		]);
 	}
 
@@ -77,7 +77,7 @@ class ExpenseController extends Controller
 			return Category::getBalances($request->user()->id, $month, $year);
 		});
 		return [
-			'balances' => $balances,
+			'balances' => $balances->toArray(),
 		];
 	}
 }
