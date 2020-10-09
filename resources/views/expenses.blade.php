@@ -49,7 +49,12 @@
 		</select>
 		<a :href="nextMonthLink">&gt;</a>
 	</h1>
-	<v-paginator :options="options" @update="updateResource" ref="vpaginator" :resource_url="resource_url"></v-paginator>
+	<el-col :span=10>
+		<v-paginator :options="options" @update="updateResource" ref="vpaginator" :resource_url="resource_url"></v-paginator>
+	</el-col>
+	<el-col :span=14 style="text-align:right">
+		<el-button type="success" @click="importExpenses"><i class="el-icon-upload el-icon-left"></i>Import</el-button>
+	</el-col>
 	<table id='expenses' class="table">
 		<tr>
 			<th>
@@ -356,6 +361,9 @@
 					if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
 				}
 				return copy;
+			},
+			importExpenses: function() {
+				window.location.href="/importExpenses";
 			}
 		}
 	});

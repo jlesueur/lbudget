@@ -7,6 +7,7 @@ use DateTimeZone;
 use Illuminate\Http\Request;
 use LBudget\Category;
 use LBudget\Expense;
+use Illuminate\Support\Facades\DB;
 use function view;
 
 class ExpenseController extends Controller
@@ -54,6 +55,9 @@ class ExpenseController extends Controller
 				$expense->$fieldName = $request->input($fieldName);
 			}
 		}
+		if ($expense->category_id == '') {
+			$expense->category_id = null;
+		}
 		$expense->save();
 		return [
 			'success' => true,
@@ -70,10 +74,10 @@ class ExpenseController extends Controller
 	}
 
 	public function budgetCategories(Request $request) {
-		\DB::connection()->enableQueryLog();
+		DB::connection()->enableQueryLog();
 		$month = $request->get('month') ?: date('n');
 		$year = $request->get('year') ?: date('Y');
-		$balances = \DB::transaction(function() use ($request, $month, $year) {
+		$balances = DB::transaction(function() use ($request, $month, $year) {
 			return Category::getBalances($request->user()->id, $month, $year);
 		});
 		return [

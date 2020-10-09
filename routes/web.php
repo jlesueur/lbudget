@@ -1,4 +1,5 @@
 <?php
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,4 +30,6 @@ Route::group(['middleware' => 'registered'], function () {
 	Route::post('/expense/{expenseId}', ['uses' => 'ExpenseController@postExpense', 'as' => 'update-expense']);
 	Route::get('/budget.json', ['uses' => 'ExpenseController@budgetCategories', 'as' => 'budget-list']);
 	Route::delete('/expense/{expenseId}', ['uses' => 'ExpenseController@deleteExpense', 'as' => 'delete-expense']);
+	Route::get('/importExpenses', ['uses' => 'ImportController@start', 'as' => 'start-import']);
+	Route::post('/importExpenses', ['uses' => 'ImportController@upload', 'as' => 'upload-import']);
 });
