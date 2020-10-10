@@ -19,25 +19,48 @@ class Expense extends Model
 		return $this->belongsTo(Category::class);
 	}
 
-	private static function buildJoiningQuery($userId, $month, $year) {
+	private static function startExpenseQuery() {
+		return Expense::query();
+	}
+
+
+	private static function addUserJoiningQuery($query, $userId) {
+		return $query->join('account', 'expense.account_id', '=', 'account.id')
+				->join('users', 'account.user_id', '=', 'users.id')
+				->where('users.id', $userId);
+	}
+
+	private static function addDateFilteringQuery($query, $month, $year) {
 		$endDateSql = "(expense.ymdt + interval '1 month' * (span_months - 1))";
 		$paddedMonth = str_pad($month, 2, '0', STR_PAD_LEFT);
 		$monthStartDate = new DateTime($year . '-' . $paddedMonth . '-01', new DateTimeZone('UTC'));
 		$monthEndDate = new DateTime($year . '-' . $paddedMonth . '-' . $monthStartDate->format('t'), new DateTimeZone('UTC'));
-		return Expense::join('account', 'expense.account_id', '=', 'account.id')
-				->join('users', 'account.user_id', '=', 'users.id')
-				->where('users.id', $userId)
-				->whereDate(DB::raw($endDateSql), '>=', $monthStartDate->format('Y-m-d'))
-				->whereDate('expense.ymdt', '<=', $monthEndDate->format('Y-m-d'));
+		return $query->whereDate(DB::raw($endDateSql), '>=', $monthStartDate->format('Y-m-d'))
+			->whereDate('expense.ymdt', '<=', $monthEndDate->format('Y-m-d'));
+	}
+
+	private static function addImportIdFilteringQuery($query, $importId) {
+		return $query->where('expense.import_id', $importId);
 	}
 
 	public static function countExpensesForYearAndMonth($userId, $month, $year) {
-		$expensesQuery = static::buildJoiningQuery($userId, $month, $year);
+		$expensesQuery = static::startExpenseQuery();
+		static::addUserJoiningQuery($expensesQuery, $userId);
+		static::addDateFilteringQuery($expensesQuery, $month,$year);
+		return $expensesQuery->count();
+	}
+
+	public static function countExpensesForImportId($userId, $importId) {
+		$expensesQuery = static::startExpenseQuery();
+		static::addUserJoiningQuery($expensesQuery, $userId);
+		static::addImportIdFilteringQuery($expensesQuery, $importId);
 		return $expensesQuery->count();
 	}
 
 	public static function expensesForYearAndMonth($userId, $month, $year, $offset = 0, $limit = -1) {
-		$expensesQuery = static::buildJoiningQuery($userId, $month, $year)
+		$expensesQuery = static::startExpenseQuery();
+		static::addUserJoiningQuery($expensesQuery, $userId);
+		static::addDateFilteringQuery($expensesQuery, $month,$year)
 				->select('expense.*')
 				->orderBy('expense.ymdt', 'asc')
 				->orderBy('expense.id', 'asc')
@@ -45,23 +68,43 @@ class Expense extends Model
 		if ($limit != -1) {
 			$expensesQuery = $expensesQuery->limit($limit);
 		}
+		$expenses = $expensesQuery->get();
+		return $expenses;
+	}
 
-				
+	public static function expensesForImportId($userId, $importId, $offset = 0, $limit = -1) {
+		$expensesQuery = static::startExpenseQuery();
+		static::addUserJoiningQuery($expensesQuery, $userId);
+		static::addImportIdFilteringQuery($expensesQuery, $importId)
+				->select('expense.*')
+				->orderBy('expense.ymdt', 'asc')
+				->orderBy('expense.id', 'asc')
+				->offset($offset);
+		if ($limit != -1) {
+			$expensesQuery = $expensesQuery->limit($limit);
+		}
 		$expenses = $expensesQuery->get();
 		return $expenses;
 	}
 
 	public static function getDataForTransactionsList($userId, $month, $year, $offset = 0, $limit = -1) {
 		$expenses = static::expensesForYearAndMonth($userId, $month, $year, $offset, $limit);
+		return static::getExpenseDataForListing($expenses);
+	}
+
+	public static function getDataForImportedTransactionsList($userId, $importId, $offset = 0, $limit = -1) {
+		$expenses = static::expensesForImportId($userId, $importId, $offset, $limit);
+		return static::getExpenseDataForListing($expenses);
+	}
+	
+	private static function getExpenseDataForListing($expenses) {
 		$expenses->load('account');
-		//$expenseCategories = $expenses->pluck('category', 'category_id')->unique();
 		$expenseAccounts = $expenses->pluck('account', 'account_id')->unique();
 		$expenses = $expenses->map(function($expense) {
 			return $expense->makeHidden('account');
 		});
 		return [
 			'expenses' => $expenses->toArray(),
-			//'expenseCategories' => $expenseCategories->toArray(),
 			'expenseAccounts' => $expenseAccounts->toArray(),
 		];
 	}
@@ -84,7 +127,9 @@ class Expense extends Model
 	}
 
 	public static function getMonthTotalsByCategoryBetween($userId, $month, $year) {
-		return static::buildJoiningQuery($userId, $month, $year)
+		$expensesQuery = static::startExpenseQuery();
+		static::addUserJoiningQuery($expensesQuery, $userId);
+		return static::addDateFilteringQuery($expensesQuery, $month,$year)
 				->select('category_id')
 				->selectRaw('
 					sum(

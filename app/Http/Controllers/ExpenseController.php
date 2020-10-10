@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use LBudget\Category;
 use LBudget\Expense;
 use Illuminate\Support\Facades\DB;
+use LBudget\Import;
+
 use function view;
 
 class ExpenseController extends Controller
@@ -29,6 +31,24 @@ class ExpenseController extends Controller
 			'budget' => json_encode(array_values(Category::getBalances($request->user()->id, $month, $year)->toArray())),
 		]);
 	}
+	
+	public function viewImportedExpenses(Request $request) {
+		$importId = $request->route('importId');
+		$import = Import::where('id', $importId)->first();
+		$nextImport = Import::where('created_at', '>', $import->created_at)->orderBy('created_at', 'asc')->first();
+		$prevImport = Import::where('created_at', '<', $import->created_at)->orderBy('created_at', 'desc')->first();
+		$categories = Category::selectList($request->user()->id);
+		$deletedCategories = Category::deletedList($request->user()->id);
+		return view('importedExpenses', [
+			'pageSize' => $this->pageSize,
+			'importId' => $importId,
+			'import' => $import->toJson(),
+			'prevImportId' => $prevImport->id ?? null,
+			'nextImportId' => $nextImport->id ?? null,
+			'categories' => $categories->toJson(),
+			'deletedCategories' => $deletedCategories->toJson(),
+		]);
+	}
 
 	public function expenseList(Request $request) {
 		$month = $request->get('month') ?: date('n');
@@ -44,6 +64,22 @@ class ExpenseController extends Controller
 			'last_page' => $lastPage,
 			'next_page_url' => $page < $lastPage ? "/expenses.json?month=$month&year=$year&page=" . ($page + 1) : null,
 			'prev_page_url' => $page > 1 ? "/expenses.json?month=$month&year=$year&page=" . ($page - 1) : null,
+		];
+	}
+
+	public function importedExpenseList(Request $request) {
+		$importId = $request->route('importId');
+		$page = $request->get('page') ?: 1;
+		$pageSize = $this->pageSize;
+		$totalExpenses = Expense::countExpensesForImportId($request->user()->id, $importId);
+		$expenseData = Expense::getDataForImportedTransactionsList($request->user()->id, $importId, $page - 1 * $pageSize, $pageSize);
+		$lastPage = ceil($totalExpenses / $pageSize);
+		return [
+			'data' => $expenseData,
+			'current_page' => $page,
+			'last_page' => $lastPage,
+			'next_page_url' => $page < $lastPage ? "/expense/import/$importId?page=" . ($page + 1) : null,
+			'prev_page_url' => $page > 1 ? "/expense/import/$importId?page=" . ($page - 1) : null,
 		];
 	}
 

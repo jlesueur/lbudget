@@ -32,4 +32,6 @@ Route::group(['middleware' => 'registered'], function () {
 	Route::delete('/expense/{expenseId}', ['uses' => 'ExpenseController@deleteExpense', 'as' => 'delete-expense']);
 	Route::get('/importExpenses', ['uses' => 'ImportController@start', 'as' => 'start-import']);
 	Route::post('/importExpenses', ['uses' => 'ImportController@upload', 'as' => 'upload-import']);
+	Route::get('/import/{importId}/expenses.json', ['uses' => 'ExpenseController@importedExpenseList', 'as' => 'expenses.json']);
+	Route::get('/import/{importId}/expenses', ['uses' => 'ExpenseController@viewImportedExpenses', 'as' => 'view-import']);
 });
