@@ -11,7 +11,10 @@ input[type="file"] {
 <h1>
 	Import transactions from a bank or credit card download.
 </h1>
+
 <div id="app" class="container">
+	<el-row>
+		<el-col :span="18">
 	<el-upload
 		action="/importExpenses"
 		:headers="{'x-csrf-token': '{{csrf_token()}}'}"
@@ -20,6 +23,13 @@ input[type="file"] {
 		<el-button size="small" type="primary">Upload a file</el-button>
 		<div slot="tip" class="el-upload__tip">OFX, QFX files preferred</div>
 	</el-upload>
+		</el-col>
+		@verbatim
+		<el-col :span="6">
+			<a :href="lastImportUrl">Last Import ({{lastImport.created_at}})</a>
+		</el-col>
+		@endverbatim
+	</el-row>
 </div>
 @endsection
 @section('pagejs')
@@ -29,9 +39,20 @@ input[type="file"] {
 		methods: {
 			succeeded: function(response, file, fileList) {
 				const importId = response.import_id;
-				window.location.href = "/expense/import/" + importId;
+				window.location.href = "/import/" + importId + "/expenses";
+			}
+		},
+		data: function() {
+			return {
+				lastImport: {!! $lastImport !!}
+			};
+		},
+		computed: {
+			lastImportUrl: function() {
+				return "/import/" + this.lastImport.id + "/expenses";
 			}
 		}
+
 	});
 </script>
 @endsection

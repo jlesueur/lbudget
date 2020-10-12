@@ -52,7 +52,13 @@
 	<el-col :span=10>
 		<v-paginator :options="options" @update="updateResource" ref="vpaginator" :resource_url="resource_url"></v-paginator>
 	</el-col>
-	<el-col :span=14 style="text-align:right">
+	<el-col :span=10>
+		&nbsp;
+	</el-col>
+	<el-col :span=2>
+		<el-button type="primary">Create</el-button>
+	</el-col>
+	<el-col :span=2 style="text-align:right">
 		<el-button type="success" @click="importExpenses"><i class="el-icon-upload el-icon-left"></i>Import</el-button>
 	</el-col>
 	<table id='expenses' class="table">
@@ -166,24 +172,26 @@
 				}
 			},
 		},
-		data: {
-			// The resource variables
-			expenses: {},
-			expenseAccounts: {},
-			categories: {!! $categories !!},
-			deletedCategories: {!! $deletedCategories !!},
-			options: {},
-			month: {{$month}},
-			year: {{$year}},
-			budgetRows: {!! $budget !!},
-			loading: false,
-			formExpense: {},
-			mode: "Edit",
-			dialogFormVisible: false,
-			// Here you define the url of your paginated API
-			resource_url: "/expenses.json?month={{$month}}&year={{$year}}",
-			budget_url: "/budget.json?month={{$month}}&year={{$year}}",
-			expense_post_url: "/expense"
+		data: function() {
+			return {
+				// The resource variables
+				expenses: {},
+				expenseAccounts: {},
+				categories: {!! $categories !!},
+				deletedCategories: {!! $deletedCategories !!},
+				options: {},
+				month: {{$month}},
+				year: {{$year}},
+				budgetRows: {!! $budget !!},
+				loading: false,
+				formExpense: {},
+				mode: "Edit",
+				dialogFormVisible: false,
+				// Here you define the url of your paginated API
+				resource_url: "/expenses.json?month={{$month}}&year={{$year}}",
+				budget_url: "/budget.json?month={{$month}}&year={{$year}}",
+				expense_post_url: "/expense"
+			};
 		},
 		computed: {
 			nextMonth: function() {
@@ -222,7 +230,6 @@
 			},
 			monthName: function() {
 				var date = new Date(this.year + '-' + this.month + '-02'); //um... timezones?
-				console.log(date);
 				var locale = navigator.languages && navigator.languages[0] ||
 					navigator.language ||
 					navigator.userLanguage;
@@ -334,7 +341,6 @@
 				this.formExpense = {};
 			},
 			saveExpenseModal: function(expense) {
-				console.log("save", expense);
 				this.loading=true;
 				if (this.mode == "Edit") {
 					var app = this;

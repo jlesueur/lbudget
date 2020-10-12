@@ -72,14 +72,14 @@ class ExpenseController extends Controller
 		$page = $request->get('page') ?: 1;
 		$pageSize = $this->pageSize;
 		$totalExpenses = Expense::countExpensesForImportId($request->user()->id, $importId);
-		$expenseData = Expense::getDataForImportedTransactionsList($request->user()->id, $importId, $page - 1 * $pageSize, $pageSize);
+		$expenseData = Expense::getDataForImportedTransactionsList($request->user()->id, $importId, ($page - 1) * $pageSize, $pageSize);
 		$lastPage = ceil($totalExpenses / $pageSize);
 		return [
 			'data' => $expenseData,
 			'current_page' => $page,
 			'last_page' => $lastPage,
-			'next_page_url' => $page < $lastPage ? "/expense/import/$importId?page=" . ($page + 1) : null,
-			'prev_page_url' => $page > 1 ? "/expense/import/$importId?page=" . ($page - 1) : null,
+			'next_page_url' => $page < $lastPage ? "/import/$importId/expenses.json?page=" . ($page + 1) : null,
+			'prev_page_url' => $page > 1 ? "/import/$importId/expenses.json?page=" . ($page - 1) : null,
 		];
 	}
 

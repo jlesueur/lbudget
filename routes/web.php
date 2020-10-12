@@ -34,4 +34,5 @@ Route::group(['middleware' => 'registered'], function () {
 	Route::post('/importExpenses', ['uses' => 'ImportController@upload', 'as' => 'upload-import']);
 	Route::get('/import/{importId}/expenses.json', ['uses' => 'ExpenseController@importedExpenseList', 'as' => 'expenses.json']);
 	Route::get('/import/{importId}/expenses', ['uses' => 'ExpenseController@viewImportedExpenses', 'as' => 'view-import']);
+	Route::get('/account', ['uses' => 'AccountController@profile', 'as', 'view-profile']);
 });

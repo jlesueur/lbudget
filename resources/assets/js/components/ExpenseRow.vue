@@ -21,8 +21,15 @@
 	<td>
 		{{accounts[expense.account_id].name}}
 	</td>
-	<td>{{expense.ymdt}}</td>
+	<td>{{expense.ymdt | format_date}}</td>
 	<td>
+		<el-dropdown size="mini" split-button type="primary" @click="deleteExpense" @command="secondaryAction" :tabindex="-1">
+			Delete
+			<el-dropdown-menu slot="dropdown">
+				<el-dropdown-item command="split">Split</el-dropdown-item>
+				<el-dropdown-item v-if="expense.import_id" command="import">View Import</el-dropdown-item>
+			</el-dropdown-menu>
+		</el-dropdown>
 		<a href="#" v-on:click="deleteExpense" class="delete" tabindex="-1">X</a>
 	</td>
 </tr>
@@ -53,6 +60,14 @@ export default {
 				event.target.value = expense.category_id;
 				console.log("error updating the category", error);
 			});
+		},
+		secondaryAction(action) {
+			if (action == 'split') {
+				return;
+			}
+			if (action == 'import') {
+				document.location = "/import/" + this.expense.import_id + '/expenses';
+			}
 		}
 	},
 	computed: {

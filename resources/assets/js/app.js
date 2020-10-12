@@ -13,7 +13,18 @@ require('./bootstrap');
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 
-
+function formatDate(dateString) {
+    var options = { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' };
+    dateParts = dateString.split(/\s*\-\s*/g);
+    timeParts = dateParts[2].split(/\s* \s*/g);
+    dateParts[2] = timeParts.shift();
+    var date  = new Date();
+    date.setFullYear(Number(dateParts[0]));
+    date.setMonth(Number(dateParts[1]) - 1);
+    date.setDate(Number(dateParts[2]));
+    return date.toLocaleDateString("en-US", options); // Saturday, September 17, 2016
+}
+Vue.filter('format_date', formatDate);
 
 Vue.component('ExpenseDialog', require('./components/ExpenseDialog.vue').default);
 Vue.component('ExpenseRow', require('./components/ExpenseRow.vue').default);

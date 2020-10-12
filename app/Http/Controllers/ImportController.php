@@ -18,8 +18,11 @@ use function view;
 
 class ImportController extends Controller
 {
-	public function start() {
-		return view('import');
+	public function start(Request $request) {
+		$lastImport = Import::query()->where('user_id', $request->user()->id)->orderBy('created_at', 'desc')->first();
+		return view('import', [
+			'lastImport' => $lastImport->toJson(),
+		]);
 	}
 
 	public function upload(Request $request) {
