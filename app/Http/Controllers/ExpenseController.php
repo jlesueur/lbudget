@@ -87,7 +87,7 @@ class ExpenseController extends Controller
 		$expense = Expense::find($expenseId);
 		$settableFields = ['category_id', 'amount', 'credit', 'ymdt', 'span_months', 'description', 'comment'];
 		foreach ($settableFields as $fieldName) {
-			if ($request->has($fieldName)) {
+			if ($request->exists($fieldName)) {
 				$expense->$fieldName = $request->input($fieldName);
 			}
 		}
@@ -113,11 +113,8 @@ class ExpenseController extends Controller
 		DB::connection()->enableQueryLog();
 		$month = $request->get('month') ?: date('n');
 		$year = $request->get('year') ?: date('Y');
-		$balances = DB::transaction(function() use ($request, $month, $year) {
-			return Category::getBalances($request->user()->id, $month, $year);
-		});
 		return [
-			'balances' => $balances->toArray(),
+			'balances' => array_values(Category::getBalances($request->user()->id, $month, $year)->toArray())
 		];
 	}
 }

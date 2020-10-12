@@ -54,7 +54,7 @@ export default {
 			axios.post("/expense/" + expense.id, {
 				'category_id': event.target.value
 			}).then(function() {
-				expense.category_id = event.target.value;
+				expense.category_id = event.target.value == "" ? null : event.target.value;
 				component.$emit('recategorized');
 			}).catch(function(error) {
 				event.target.value = expense.category_id;
