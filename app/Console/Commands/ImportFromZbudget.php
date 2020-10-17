@@ -3,6 +3,8 @@
 namespace LBudget\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Capsule\Manager;
+use Illuminate\Support\Facades\DB;
 
 class ImportFromZbudget extends Command
 {
@@ -11,7 +13,7 @@ class ImportFromZbudget extends Command
      *
      * @var string
      */
-    protected $signature = 'import:zbudget {--host=localhost} {--port=5432} {--user=zbudget} {--db=zbudget} {--password=zbudget}';
+    protected $signature = 'import:zbudget {--host=localhost} {--port=5432} {--user=} {--db=} {--password=}';
 
     /**
      * The console command description.
@@ -37,22 +39,27 @@ class ImportFromZbudget extends Command
      */
     public function handle()
     {
+		$lbudget = DB::connection();
+		$manager = new Manager();
 		$faker = \Faker\Factory::create();
-        $host = $this->option('host');
-		$port = $this->option('port');
-		$user = $this->option('user');
-		$dbName = $this->option('db');
-		$password = $this->option('password');
-		$databaseManager = new \Illuminate\Database\Capsule\Manager();
-		$databaseManager->addConnection([
+		$host = $this->option('host') ?? env('DB_HOST');
+		$port = $this->option('port') ?? env('DB_PORT');
+		$password = $this->option('password') ?? env('DB_PASSWORD');
+		$user = $this->option('user') ?? env('DB_USERNAME');
+		$dbName = $this->option('db') ?? 'zbudget';
+
+		$manager->addConnection([
 			'driver' => 'pgsql',
 			'host' => $host,
+			'port' => $port,
 			'database' => $dbName,
 			'username' => $user,
 			'password' => $password,
 			'charset' => 'utf-8'
 		],'zbudget');
-		$users = $databaseManager->getConnection('zbudget')->table('person')->get();
+		$zbudget = $manager->getConnection('zbudget');
+
+		$users = $zbudget->table('person')->get();
 		foreach ($users as $zUser) {
 			$user = new \LBudget\User();
 			$user->id = $zUser->id;
@@ -62,8 +69,9 @@ class ImportFromZbudget extends Command
 			$user->init_done = true;
 			$user->save();
 		}
-		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'id'), MAX(id)) FROM users");
-		$accounts = $databaseManager->getConnection('zbudget')->table('account')->get();
+		$lbudget->statement("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'id'), MAX(id)) FROM users");
+
+		$accounts = $zbudget->table('account')->get();
 		foreach ($accounts as $zAccount) {
 			$account = new \LBudget\Account();
 			$account->id = $zAccount->id;
@@ -73,8 +81,9 @@ class ImportFromZbudget extends Command
 			$account->deleted_at = $zAccount->deleted ? '2010-01-01 00:00:00' : null;
 			$account->save();
 		}
-		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('account', 'id'), MAX(id)) FROM account");
-		$categories = $databaseManager->getConnection('zbudget')->table('category')->get();
+		$lbudget->statement("SELECT pg_catalog.setval(pg_get_serial_sequence('account', 'id'), MAX(id)) FROM account");
+
+		$categories = $zbudget->table('category')->get();
 		foreach ($categories as $zCategory) {
 			$category = new \LBudget\Category();
 			$category->id = $zCategory->id;
@@ -95,8 +104,9 @@ class ImportFromZbudget extends Command
 			}
 			$category->save();
 		}
-		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('category', 'id'), MAX(id)) FROM category");
-		$expenses = $databaseManager->getConnection('zbudget')->table('expense')->get();
+		$lbudget->statement("SELECT pg_catalog.setval(pg_get_serial_sequence('category', 'id'), MAX(id)) FROM category");
+
+		$expenses = $zbudget->table('expense')->get();
 		foreach($expenses as $zExpense) {
 			$expense = new \LBudget\Expense();
 			$expense->id = $zExpense->id;
@@ -109,11 +119,12 @@ class ImportFromZbudget extends Command
 			$expense->import_hash = $zExpense->unique_id;
 			$expense->span_months = $zExpense->span_months;
 			$expense->credit = (bool)$zExpense->credit;
+			$expense->deleted_at = $zExpense->deleted ? $zExpense->date . ' 00:00:00' : null;
 			$expense->save();
 		}
-		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('expense', 'id'), MAX(id)) FROM expense");
+		$lbudget->statement("SELECT pg_catalog.setval(pg_get_serial_sequence('expense', 'id'), MAX(id)) FROM expense");
 
-		$categoryPeriods = $databaseManager->getConnection('zbudget')->table('category_period')->get();
+		$categoryPeriods = $zbudget->table('category_period')->get();
 		foreach($categoryPeriods as $zCategoryPeriod) {
 			$categoryPeriod = new \LBudget\CategoryPeriod();
 			$categoryPeriod->id = $zCategoryPeriod->id;
@@ -125,6 +136,6 @@ class ImportFromZbudget extends Command
 			$categoryPeriod->deleted_at = $zCategoryPeriod->deleted ? '2010-01-01 00:00:00' : null;
 			$categoryPeriod->save();
 		}
-		$databaseManager->getConnection('lbudget')->query("SELECT pg_catalog.setval(pg_get_serial_sequence('category_period', 'id'), MAX(id)) FROM category_period");
+		$lbudget->statement("SELECT pg_catalog.setval(pg_get_serial_sequence('category_period', 'id'), MAX(id)) FROM category_period");
     }
 }

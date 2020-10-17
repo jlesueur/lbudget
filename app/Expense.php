@@ -110,17 +110,20 @@ class Expense extends Model
 	}
 
 	public static function getHistoricTotalsByCategoryUntil($categories, $monthStartDate) {
+		$monthEndDate = $monthStartDate->format('Y-m-t');
 		$expenses = DB::table('expense')->select('category_id')
 				->selectRaw('sum(
 				(case when credit then 1 else -1 end) * 
-				(amount * least(extract(month from age(?, ymdt)), span_months) / span_months)) as used',[
-					'date' => $monthStartDate
+				(amount * least(extract(year from age(?, ymdt)) * 12 + extract(month from age(?, ymdt)), span_months) / span_months)) as used',[
+					'date' => $monthEndDate,
+					'date2' => $monthEndDate
 				])
 				->selectRaw('sum(
 				(case when credit then 1 else -1 end) *
 				(amount)) as spent')
 				->where('ymdt', '<', $monthStartDate)
 				->whereIn('category_id', $categories->pluck('id'))
+				->whereNull('deleted_at')
 				->groupBy('category_id')
 				->get()->keyBy('category_id');
 		return $expenses;
