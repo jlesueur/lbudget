@@ -11,30 +11,7 @@
 	}
 </style>
 <script type="text/x-template" id="budget-row">
-<tr :style="{backgroundColor: budget.color ? budget.color : 'white'}">
-	<td>
-		{{budget.name}}
-	</td>
-	<td>
-		<span v-html="budgetUsed"></span>
-	</td>
-	<td>
-		<span v-if="budget.id != null && budget.id != 0">
-			${{budgetAllocated|round(2)}}
-		</span>
-	</td>
-	<td>
-		<span v-if="budget.id != null && budget.id != 0">
-			<span v-if="budgetAvailable < 0" syle="font-color:red">
-				(${{budgetAvailable * -1 |round(2)}})
-			</span>
-			<span v-else>
-				<b><em>${{budgetAvailable|round(2)}}</em></b>
-			</span>
-		</span>
-	</td>
-	<td></td>
-</tr>
+
 </script>
 <div id="app" class="container">
 	<h1>
@@ -61,7 +38,7 @@
 	<el-col :span=2 style="text-align:right">
 		<el-button type="success" @click="importExpenses"><i class="el-icon-upload el-icon-left"></i>Import</el-button>
 	</el-col>
-	<table id='expenses' class="table">
+	<table v-if="expenses.length > 0" id='expenses' class="table">
 		<tr>
 			<th>
 				&nbsp;
@@ -85,7 +62,10 @@
 				Delete
 			</th>
 		</tr>
-		<tr is="expense-row" v-for="expense in expenses" :expense="expense" :categories="categories" :deleted-categories="deletedCategories" :accounts="expenseAccounts" v-on:recategorized="refetchBudget" v-on:deleted="deleteExpense" :key="expense.id" v-on:edit-expense="editExpense"></tr>
+		<tr is="expense-row" 
+			v-for="expense in expenses" :key="expense.id"
+			:expense="expense" :categories="categories" :deleted-categories="deletedCategories" :accounts="expenseAccounts" 
+			v-on:recategorized="refetchBudget" v-on:deleted="deleteExpense" v-on:edit-expense="editExpense" v-on:split="splitExpense"></tr>
 	</table>
 	<table id="budget" class="table">
 		<tr>
@@ -102,13 +82,28 @@
 				Left
 			</th>
 		</tr>
-		<tr is="budget-row" v-for="budget in budgetRows" :budget="budget" :key="budget.id"></tr>
+		<tr is="budget-row" 
+			v-for="budget in budgetRows" :key="budget.id"
+			:budget="budget"
+			v-on:edit-budget="editCategory"></tr>
 	</table>
-	<expense-dialog 
+	<expense-dialog
 		:mode="mode" 
-		:dialog-form-visible="dialogFormVisible" 
-		:loading="loading" :form-expense="formExpense" v-on:cancel="cancelExpenseModal" v-on:save="saveExpenseModal"/>
+		:dialog-form-visible="expenseDialogFormVisible" 
+		:loading="loading" :form-expense="formExpense" v-on:cancel="cancelExpenseModal" v-on:save="saveExpenseModal">
+	</expense-dialog>
+	<split-expense-dialog
+		:dialog-form-visible="splitExpenseDialogFormVisible" :categories="categories"
+		:loading="loading" :form-expense="formExpense" v-on:cancel="cancelSplitExpenseModal" v-on:save="saveSplitExpenseModal">
+	</split-expense-dialog>
+	<category-dialog
+		:mode="mode"
+		:dialog-form-visible="categoryDialogFormVisible"
+		:loading="loading" :form-category="formCategory" v-on:cancel="cancelCategoryModal" v-on:save="saveCategoryModal">
+	</category-dialog>
+	
 </div>
+	
 @endverbatim
 @endsection
 @section('pagejs')
@@ -124,53 +119,7 @@
 	var vm = new Vue({
 		el: '#app',
 		components: {
-			VPaginator: VuePaginator,
-			BudgetRow: {
-				template: '#budget-row',
-				props: ['budget'],
-				computed: {
-					budgetUsed: function() {
-						var used = 0;
-						if (this.budget.monthTotal == null) {
-							used = 0;
-						} else if (this.budget.id == null) {
-							used = this.budget.monthTotal.spent;
-						} else {
-							used = this.budget.monthTotal.used;
-						}
-						if (used < 0) {
-							return '($' + (round(used * -1, 2)) + ')';
-						}
-						return "<b><em>$" + round(used, 2) + "</em></b>";
-					},
-					budgetAvailable: function() {
-						var allocated = 0;
-						if (!this.budget.style || this.budget.id == 0) {
-							return allocated;
-						}
-						if (this.budget.style == 'allowance') {
-							allocated = Number.parseFloat(this.budget.amount);
-						} else {
-							allocated = Number.parseFloat(this.budget.allocatedSum);
-							if (this.budget.historicalTotal) {
-								allocated += Number.parseFloat(this.budget.historicalTotal.used);
-							}
-						}
-						var thisMonthUsed = 0;
-						if (this.budget.monthTotal) {
-							thisMonthUsed = Number.parseFloat(this.budget.monthTotal.used);
-						}
-						return allocated + thisMonthUsed;
-
-					},
-					budgetAllocated: function() {
-						if (!this.budget.amount) {
-							return 0;
-						}
-						return this.budget.amount;
-					}
-				}
-			},
+			VPaginator: VuePaginator
 		},
 		data: function() {
 			return {
@@ -185,12 +134,16 @@
 				budgetRows: {!! $budget !!},
 				loading: false,
 				formExpense: {},
+				formCategory: {category_period:{}},
 				mode: "Edit",
-				dialogFormVisible: false,
+				expenseDialogFormVisible: false,
+				splitExpenseDialogFormVisible: false,
+				categoryDialogFormVisible: false,
 				// Here you define the url of your paginated API
 				resource_url: "/expenses.json?month={{$month}}&year={{$year}}",
 				budget_url: "/budget.json?month={{$month}}&year={{$year}}",
-				expense_post_url: "/expense"
+				expense_post_url: "/expense",
+				category_post_url: "/category_period"
 			};
 		},
 		computed: {
@@ -334,11 +287,28 @@
 			editExpense: function(expense) {
 				this.mode = 'Edit';
 				this.formExpense = this.clone(expense); // See note below
-				this.dialogFormVisible = true;
+				this.expenseDialogFormVisible = true;
 			},
 			cancelExpenseModal: function() {
-				this.dialogFormVisible = false;
+				this.expenseDialogFormVisible = false;
 				this.formExpense = {};
+			},
+			replaceExpense(expense) {
+				for (i in this.expenses) {
+					if (this.expenses[i].id == expense.id) {
+						this.expenses[i] = expense;
+						return;
+					}
+				}
+			},
+			spliceExpense(expense_id, deleteCount, new_expense) {
+				for (i in this.expenses) {
+					if (this.expenses[i].id == expense_id) {
+						startIndex = i;
+						break;
+					}
+				}
+				this.expenses.splice(startIndex, deleteCount, new_expense);
 			},
 			saveExpenseModal: function(expense) {
 				this.loading=true;
@@ -346,16 +316,74 @@
 					var app = this;
 					axios.post(this.expense_post_url + '/' + expense.id, expense).then(function(response) {
 						//find the expense in our expenses, and update it...
-						for (i in app.expenses) {
-							if (app.expenses[i].id == expense.id) {
-								app.expenses[i] = expense;
-							}
-						}
-						app.dialogFormVisible = false;
+						app.replaceExpense(expense);
+						app.expenseDialogFormVisible = false;
 						app.loading = false;
 						app.refetchBudget();
 					}).catch(function() {
-						console.log('error fetching budget data.');
+						console.log('error saving expense data.');
+						app.loading = false;
+					});
+				}
+			},
+			splitExpense: function(expense) {
+				this.formExpense = this.clone(expense);
+				this.splitExpenseDialogFormVisible = true;
+			},
+			cancelSplitExpenseModal: function() {
+				this.splitExpenseDialogFormVisible = false;
+				this.formExpense = {};
+			},
+			saveSplitExpenseModal: function(splitDetails) {
+				var app = this;
+				var postedData = {
+					'category_id': splitDetails.category_id,
+					'amount': splitDetails.amount,
+					'comment': splitDetails.comment
+				}
+				axios.post(this.split_expense_url + '/' + splitDetails.original_expense_id, postedData).then(function(response) {
+					app.replaceExpense(response.original_expense);
+					app.spliceExpense(response.original_expense.id, 0, response.new_expense);
+					app.splitExpenseDialogFormVisible = false;
+					app.loading = false;
+					app.refetchBudget();
+				}).catch(function() {
+					console.log('error splitting expense');
+					app.loading = false;
+				});
+			},
+			editCategory: function(budget) {
+				console.log(budget);
+				this.mode = 'Edit';
+				this.formCategory = this.clone(budget); // See note below
+				this.categoryDialogFormVisible = true;
+			},
+			cancelCategoryModal: function() {
+				this.categoryDialogFormVisible = false;
+				this.formCategory = {};
+			},
+			saveCategoryModal: function(category) {
+				this.loading=true;
+				if (this.mode == "Edit") {
+					var app = this;
+					var postedData = {
+						'name': category.name,
+						'style': category.style,
+						'amount': category.category_period.amount
+					}
+					axios.post(this.category_post_url + '/' + category.category_period.id, postedData).then(function(response) {
+						//find the expense in our expenses, and update it...
+						category.amount = category.category_period.amount;
+						for (i in app.budgetRows) {
+							if (app.budgetRows[i].id == category.id) {
+								app.budgetRows[i] = category;
+								break;
+							}
+						}
+						app.categoryDialogFormVisible = false;
+						app.loading = false;
+					}).catch(function() {
+						console.log('error saving category data.');
 						app.loading = false;
 					});
 				}

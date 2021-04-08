@@ -1,6 +1,10 @@
 <template>
-    <el-dialog :title="modalTitle" :loading="loading" :visible.sync="dialogFormVisible" v-on:open="openWithNewExpense">
-		<el-form :model="internalFormExpense" label-position="right" label-width="6.5em">
+    <el-dialog 
+		:title="modalTitle" :loading="loading" 
+		:visible.sync="dialogFormVisible" v-on:open="openWithNewExpense">
+		<el-form 
+			:model="internalFormExpense" label-position="right" 
+			label-width="6.5em">
 			<el-form-item label="Credit">
 				<el-switch v-model="internalFormExpense.credit"/>
 			</el-form-item>

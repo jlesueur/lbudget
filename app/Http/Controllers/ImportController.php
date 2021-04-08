@@ -21,7 +21,7 @@ class ImportController extends Controller
 	public function start(Request $request) {
 		$lastImport = Import::query()->where('user_id', $request->user()->id)->orderBy('created_at', 'desc')->first();
 		return view('import', [
-			'lastImport' => $lastImport->toJson(),
+			'lastImport' => $lastImport ? $lastImport->toJson() : json_encode([]),
 		]);
 	}
 

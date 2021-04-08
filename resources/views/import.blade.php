@@ -25,7 +25,7 @@ input[type="file"] {
 	</el-upload>
 		</el-col>
 		@verbatim
-		<el-col :span="6">
+		<el-col :span="6" v-if="lastImport.id != null">
 			<a :href="lastImportUrl">Last Import ({{lastImport.created_at}})</a>
 		</el-col>
 		@endverbatim

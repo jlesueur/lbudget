@@ -12,9 +12,18 @@ use LBudget\Import;
 
 use function view;
 
-class ExpenseController extends Controller
-{
+class ExpenseController extends Controller {
 	private $pageSize = 15;
+
+	private function getBudgetData($userId, $month, $year) {
+		return array_map(function($budgetRow) {
+			if (isset($budgetRow['category_period'][0])) {
+				$budgetRow['category_period'] = $budgetRow['category_period'][0];
+			}
+			return $budgetRow;
+		}, array_values(Category::getBalances($userId, $month, $year)->toArray()));
+	}
+
     public function all(Request $request) {
 		$now = new DateTime(null, new DateTimeZone('America/Denver'));
 		$month = $request->get('month') ?: $now->format('n');
@@ -22,13 +31,14 @@ class ExpenseController extends Controller
 		//$expenseCount = Expense::countExpensesForYearAndMonth($request->user()->id, $month, $year);
 		$categories = Category::selectList($request->user()->id);
 		$deletedCategories = Category::deletedList($request->user()->id);
+		$budget = $this->getBudgetData($request->user()->id, $month, $year);
 		return view('expenses', [
 			'pageSize' => $this->pageSize,
 			'month' => $month,
 			'year' => $year,
 			'categories' => $categories->toJson(),
 			'deletedCategories' => $deletedCategories->toJson(),
-			'budget' => json_encode(array_values(Category::getBalances($request->user()->id, $month, $year)->toArray())),
+			'budget' => json_encode($budget),
 		]);
 	}
 	
@@ -57,7 +67,7 @@ class ExpenseController extends Controller
 		$pageSize = $this->pageSize;
 		$totalExpenses = Expense::countExpensesForYearAndMonth($request->user()->id, $month, $year);
 		$expenseData = Expense::getDataForTransactionsList($request->user()->id, $month, $year, ($page - 1) * $pageSize, $pageSize);
-		$lastPage = ceil($totalExpenses / $pageSize);
+		$lastPage = ceil($totalExpenses / $pageSize) ?: 1;
 		return [
 			'data' => $expenseData,
 			'current_page' => $page,
@@ -73,7 +83,7 @@ class ExpenseController extends Controller
 		$pageSize = $this->pageSize;
 		$totalExpenses = Expense::countExpensesForImportId($request->user()->id, $importId);
 		$expenseData = Expense::getDataForImportedTransactionsList($request->user()->id, $importId, ($page - 1) * $pageSize, $pageSize);
-		$lastPage = ceil($totalExpenses / $pageSize);
+		$lastPage = ceil($totalExpenses / $pageSize) ?: 1;
 		return [
 			'data' => $expenseData,
 			'current_page' => $page,
@@ -110,11 +120,10 @@ class ExpenseController extends Controller
 	}
 
 	public function budgetCategories(Request $request) {
-		DB::connection()->enableQueryLog();
 		$month = $request->get('month') ?: date('n');
 		$year = $request->get('year') ?: date('Y');
 		return [
-			'balances' => array_values(Category::getBalances($request->user()->id, $month, $year)->toArray())
+			'balances' => $this->getBudgetData($request->user()->id, $month, $year)
 		];
 	}
 }
